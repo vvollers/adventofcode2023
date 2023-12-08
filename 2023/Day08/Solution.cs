@@ -43,14 +43,6 @@ partial class Solution : Solver
         return path;
     }
     
-    public object PartOne(string input)
-    {
-        var instructions = ParseInstructions(input);
-        var nodes = ParseNodes(input);
-
-        return FindPath("AAA", n => n.Id == "ZZZ", nodes, instructions).Count;
-    }
-    
     private long FindLeastCommonMultiple(IEnumerable<long> numbers) =>
         numbers.Aggregate((long)1, (current, number) => current / GreatestCommonDivisor(current, number) * number);
     
@@ -62,6 +54,14 @@ partial class Solution : Solver
             (a, b) = (b, a);
         }
         return a;
+    }
+    
+    public object PartOne(string input)
+    {
+        var instructions = ParseInstructions(input);
+        var nodes = ParseNodes(input);
+
+        return FindPath("AAA", n => n.Id == "ZZZ", nodes, instructions).Count;
     }
     
     public object PartTwo(string input)

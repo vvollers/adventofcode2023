@@ -8,9 +8,9 @@ class Solution : Solver
 {
     public IEnumerable<long> ZipDiff(IEnumerable<long> numbers) => numbers.Zip(numbers.Skip(1), (a, b) => b - a);
 
-    long RecurseRight(List<long> numbers) => numbers.Count == 0 ? 0 : (RecurseRight(ZipDiff(numbers).ToList()) + numbers.Last());
+    long RecurseRight(List<long> numbers) => numbers.Count == 0 ? 0 : RecurseRight(ZipDiff(numbers).ToList()) + numbers.Last();
     
-    long RecurseLeft(List<long> numbers) => numbers.Count == 0 ? 0 : (numbers.First() - RecurseLeft(ZipDiff(numbers).ToList()));
+    long RecurseLeft(List<long> numbers) => numbers.Count == 0 ? 0 : numbers.First() - RecurseLeft(ZipDiff(numbers).ToList());
     
     List<List<long>> ParseNumbers(string input) => input.Split("\n").
                                                          Select(line => line.Split(" ").

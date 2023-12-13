@@ -99,10 +99,8 @@ class Solution : Solver
 
         public int GetAlternativeScore(Field original)
         {
-            var newHorizontalPalindromes = HorizontalPalindromes.Where(o => !original.HorizontalPalindromes.Contains(o)).
-                                                                 ToList();
-            var newVerticalPalindromes = VerticalPalindromes.Where(o => !original.VerticalPalindromes.Contains(o)).
-                                                             ToList();
+            var newHorizontalPalindromes = HorizontalPalindromes.Except(original.HorizontalPalindromes).ToList();
+            var newVerticalPalindromes = VerticalPalindromes.Except(original.VerticalPalindromes).ToList();
 
             var numCols = newHorizontalPalindromes.Count == 0 ? 0 : newHorizontalPalindromes[0] + 1;
             var numRows = newVerticalPalindromes.Count == 0 ? 0 : newVerticalPalindromes[0] + 1;

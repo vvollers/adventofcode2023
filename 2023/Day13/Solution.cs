@@ -86,26 +86,15 @@ class Solution : Solver
                        Where(i => list[i] == list[i + 1] && IsPalindrome(list, i)).
                        ToList();
 
-        public Field FindAlternativeReflection()
+        public IEnumerable<Field> FindAlternativeReflections() =>
+            Enumerable.Range(0, Width).
+                       SelectMany(x => Enumerable.Range(0, Height), (x, y) => GetAlternative(x, y)).
+                       Where(newField => HasDifferentPalindromes(newField));
+
+        private bool HasDifferentPalindromes(Field newField)
         {
-            for (var x = 0; x < Width; x++)
-            {
-                for (var y = 0; y < Height; y++)
-                {
-                    var newField = GetAlternative(x, y);
-
-                    var horizontalPalindromes = newField.HorizontalPalindromes;
-                    var verticalPalindromes = newField.VerticalPalindromes;
-
-                    if ((horizontalPalindromes.Count > 0 && !Enumerable.SequenceEqual(HorizontalPalindromes, horizontalPalindromes)) ||
-                        (verticalPalindromes.Count > 0 && !Enumerable.SequenceEqual(VerticalPalindromes, verticalPalindromes)))
-                    {
-                        return newField;
-                    }
-                }
-            }
-
-            return this;
+            return (newField.HorizontalPalindromes.Any() && !newField.HorizontalPalindromes.SequenceEqual(HorizontalPalindromes)) ||
+                   (newField.VerticalPalindromes.Any() && !newField.VerticalPalindromes.SequenceEqual(VerticalPalindromes));
         }
 
         public int GetAlternativeScore(Field original)
@@ -140,6 +129,7 @@ class Solution : Solver
 
     public object PartTwo(string input) =>
         ParseInput(input).
-            Sum(field => field.FindAlternativeReflection().
+            Sum(field => field.FindAlternativeReflections().
+                               First().
                                GetAlternativeScore(field));
 }

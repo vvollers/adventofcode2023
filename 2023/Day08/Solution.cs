@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Text.RegularExpressions;
+using adventofcode.AdventLib;
 
 namespace AdventOfCode.Y2023.Day08;
 
@@ -42,20 +43,7 @@ partial class Solution : Solver
 
         return path;
     }
-    
-    private long FindLeastCommonMultiple(IEnumerable<long> numbers) =>
-        numbers.Aggregate((long)1, (current, number) => current / GreatestCommonDivisor(current, number) * number);
-    
-    private long GreatestCommonDivisor(long a, long b)
-    {
-        while (b != 0)
-        {
-            a %= b;
-            (a, b) = (b, a);
-        }
-        return a;
-    }
-    
+
     public object PartOne(string input)
     {
         var instructions = ParseInstructions(input);
@@ -73,7 +61,7 @@ partial class Solution : Solver
                                  Select(node => FindPath(node.Id, n => n.Id.EndsWith('Z'), nodes, instructions)).
                                  Select(path => (long)path.Count);
         
-        return FindLeastCommonMultiple(deltas);
+        return ExtraMath.FindLeastCommonMultiple(deltas);
     }
 
     [GeneratedRegex("\\w+")]

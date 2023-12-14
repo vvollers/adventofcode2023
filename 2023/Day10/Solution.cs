@@ -5,12 +5,19 @@ using System.Linq;
 namespace AdventOfCode.Y2023.Day10;
 
 [ProblemName("Pipe Maze")]
-class Solution : Solver
+internal class Solution : Solver
 {
-    private static char[][] _grid;
-    private static bool[][] _outsideLoop;
-    private static bool[][] _insideLoop;
-    private static bool[][] _isLoop;
+    public enum PipeType
+    {
+        None = '.',
+        Vertical = '|',
+        Horizontal = '-',
+        NorthEast = 'L',
+        NorthWest = 'J',
+        SouthWest = '7',
+        SouthEast = 'F',
+        Start = 'S',
+    }
 
     public enum RelativeDirection
     {
@@ -25,17 +32,10 @@ class Solution : Solver
         NorthWest,
     }
 
-    public enum PipeType
-    {
-        None = '.',
-        Vertical = '|',
-        Horizontal = '-',
-        NorthEast = 'L',
-        NorthWest = 'J',
-        SouthWest = '7',
-        SouthEast = 'F',
-        Start = 'S',
-    }
+    private static char[][] _grid;
+    private static bool[][] _outsideLoop;
+    private static bool[][] _insideLoop;
+    private static bool[][] _isLoop;
 
     private static readonly Dictionary<PipeType, char> PipeChars = new()
                                                                    {
@@ -60,66 +60,49 @@ class Solution : Solver
                                                                                                 { PipeType.Start, [RelativeDirection.East, RelativeDirection.West, RelativeDirection.North, RelativeDirection.South] },
                                                                                             };
 
-    public record Coordinate
+    public object PartOne(string input)
     {
-        public Coordinate(int x, int y)
-        {
-            X = x;
-            Y = y;
-            IsInsideGrid = X >= 0 && Y >= 0 && X < _grid[0].Length && Y < _grid.Length;
-            C = IsInsideGrid ? _grid[Y][X] : ' ';
-            IsPipe = IsInsideGrid && Enum.IsDefined(typeof(PipeType), (int)C);
-            PipeType = IsPipe ? (PipeType)C : PipeType.None;
-            if (PipeType == PipeType.None)
-            {
-                IsPipe = false;
-            }
+        InitGrid(input);
 
-            IsStart = IsInsideGrid && PipeType == PipeType.Start;
-        }
-
-        public int X { get; }
-        public int Y { get; }
-        public char C { get; }
-
-        public bool IsInsideGrid { get; }
-        public bool IsPipe { get; }
-        public PipeType PipeType { get; }
-        public bool IsStart { get; }
-
-        public RelativeDirection RelativeOffset(Coordinate other) => (RelativeDirection)(X - other.X + (Y - other.Y) * 3 + 4);
-
-        public bool IsConnected(Coordinate to) =>
-            IsPipe && to.IsPipe && Around.Contains(to) && ValidDirections[PipeType].
-                Contains(RelativeOffset(to));
-
-        private IEnumerable<Coordinate> Around =>
-            from y in Enumerable.Range(Y - 1, 3)
-            from x in Enumerable.Range(X - 1, 3)
-            let c = new Coordinate(x, y)
-            where c.IsInsideGrid && !(x == X && y == Y)
-            select c;
-
-        public IEnumerable<Coordinate> Neighbours => Around.Where(c => c.IsPipe);
-
-        public Coordinate GetNext(Coordinate prev) => Neighbours.First(c => c != prev && IsConnected(c));
- 
-        public String GetDebug()
-        {
-            return $"({X,2}, {Y,2}): char: {C} gChar: {_grid[Y][X]} type: {PipeType} isStart: {IsStart} IsPipe: {IsPipe} north: {IsConnected(new Coordinate(X, Y - 1))} west: {IsConnected(new Coordinate(X + 1, Y))} south: {IsConnected(new Coordinate(X, Y + 1))} east: {IsConnected(new Coordinate(X - 1, Y))}";
-        }
+        return Math.Floor(Loop().
+                              Count() / 2.0);
     }
 
-    private IEnumerable<Coordinate> GridSelection(int minX, int minY, int maxX, int maxY) =>
-        from y in Enumerable.Range(minY, (maxY - minY) + 1)
-        from x in Enumerable.Range(minX, (maxX - minX) + 1)
-        let c = new Coordinate(x, y)
-        where c.IsInsideGrid
-        select c;
+    public object PartTwo(string input)
+    {
+        InitGrid(input);
+        PrintGrid();
 
-    public Coordinate FindStart() =>
-        GridSelection(0, 0, _grid[0].Length - 1, _grid.Length - 1).
+        foreach (var c in Loop())
+        {
+            _isLoop[c.Y][c.X] = true;
+        }
+
+        _outsideLoop = DumbScaleGrid();
+
+        Fill(0, 0);
+
+        ApplyGrid(_insideLoop, (x, y) => !_isLoop[y][x] && !_outsideLoop[y * 3 + 1][x * 3 + 1]);
+
+        PrintFinalGrid();
+
+        return _insideLoop.Sum(row => row.Count(c => c));
+    }
+
+    private IEnumerable<Coordinate> GridSelection(int minX, int minY, int maxX, int maxY)
+    {
+        return from y in Enumerable.Range(minY, maxY - minY + 1)
+               from x in Enumerable.Range(minX, maxX - minX + 1)
+               let c = new Coordinate(x, y)
+               where c.IsInsideGrid
+               select c;
+    }
+
+    public Coordinate FindStart()
+    {
+        return GridSelection(0, 0, _grid[0].Length - 1, _grid.Length - 1).
             First(c => c.IsStart);
+    }
 
     public void InitGrid(string input)
     {
@@ -135,14 +118,6 @@ class Solution : Solver
             _insideLoop[y] = new bool[_grid[y].Length];
             _isLoop[y] = new bool[_grid[y].Length];
         }
-    }
-
-
-
-
-    record FillCoordinate(int X1, int X2, int Y, int DY)
-    {
-        public int X1 { get; set; } = X1;
     }
 
     public bool Inside(int X, int Y)
@@ -164,7 +139,7 @@ class Solution : Solver
 
         while (queue.Count > 0)
         {
-            FillCoordinate c = queue.Dequeue();
+            var c = queue.Dequeue();
 
             var x = c.X1;
 
@@ -265,7 +240,6 @@ class Solution : Solver
         return newGrid;
     }
 
-    
 
     public void ApplyGrid<T>(T[][] grid, Func<int, int, T> func)
     {
@@ -293,37 +267,9 @@ class Solution : Solver
         }
     }
 
-    public object PartOne(string input)
-    {
-        InitGrid(input);
-
-        return Math.Floor(Loop().Count() / 2.0);
-    }
-
-    public object PartTwo(string input)
-    {
-        InitGrid(input);
-        PrintGrid();
-
-        foreach (Coordinate c in Loop())
-        {
-            _isLoop[c.Y][c.X] = true;
-        }
-
-        _outsideLoop = DumbScaleGrid();
-
-        Fill(0, 0);
-
-        ApplyGrid(_insideLoop, (x, y) => !_isLoop[y][x] && !_outsideLoop[y * 3 + 1][x * 3 + 1]);
-
-        PrintFinalGrid();
-
-        return _insideLoop.Sum(row => row.Count(c => c));
-    }
-    
     public void PrintGrid()
     {
-        for (int i = 0; i < 3; i++)
+        for (var i = 0; i < 3; i++)
         {
             Console.Write("   ");
             for (var x = 0; x < _grid[0].Length; x++)
@@ -346,7 +292,7 @@ class Solution : Solver
             Console.WriteLine();
         }
     }
-    
+
     public void PrintFinalGrid()
     {
         foreach (var row in _grid.Select((r, y) => new { r, y }))
@@ -364,8 +310,8 @@ class Solution : Solver
 
     public void PrintOutsideLoop()
     {
-        int maxY = _outsideLoop.Length;
-        int maxX = Math.Min(Console.BufferWidth, _outsideLoop[0].Length);
+        var maxY = _outsideLoop.Length;
+        var maxX = Math.Min(Console.BufferWidth, _outsideLoop[0].Length);
 
         for (var y = 0; y < maxY; y++)
         {
@@ -376,5 +322,69 @@ class Solution : Solver
 
             Console.WriteLine();
         }
+    }
+
+    public record Coordinate
+    {
+        public Coordinate(int x, int y)
+        {
+            X = x;
+            Y = y;
+            IsInsideGrid = X >= 0 && Y >= 0 && X < _grid[0].Length && Y < _grid.Length;
+            C = IsInsideGrid ? _grid[Y][X] : ' ';
+            IsPipe = IsInsideGrid && Enum.IsDefined(typeof(PipeType), (int)C);
+            PipeType = IsPipe ? (PipeType)C : PipeType.None;
+            if (PipeType == PipeType.None)
+            {
+                IsPipe = false;
+            }
+
+            IsStart = IsInsideGrid && PipeType == PipeType.Start;
+        }
+
+        public int X { get; }
+        public int Y { get; }
+        public char C { get; }
+
+        public bool IsInsideGrid { get; }
+        public bool IsPipe { get; }
+        public PipeType PipeType { get; }
+        public bool IsStart { get; }
+
+        private IEnumerable<Coordinate> Around =>
+            from y in Enumerable.Range(Y - 1, 3)
+            from x in Enumerable.Range(X - 1, 3)
+            let c = new Coordinate(x, y)
+            where c.IsInsideGrid && !(x == X && y == Y)
+            select c;
+
+        public IEnumerable<Coordinate> Neighbours => Around.Where(c => c.IsPipe);
+
+        public RelativeDirection RelativeOffset(Coordinate other)
+        {
+            return (RelativeDirection)(X - other.X + (Y - other.Y) * 3 + 4);
+        }
+
+        public bool IsConnected(Coordinate to)
+        {
+            return IsPipe && to.IsPipe && Around.Contains(to) && ValidDirections[PipeType].
+                       Contains(RelativeOffset(to));
+        }
+
+        public Coordinate GetNext(Coordinate prev)
+        {
+            return Neighbours.First(c => c != prev && IsConnected(c));
+        }
+
+        public string GetDebug()
+        {
+            return $"({X,2}, {Y,2}): char: {C} gChar: {_grid[Y][X]} type: {PipeType} isStart: {IsStart} IsPipe: {IsPipe} north: {IsConnected(new Coordinate(X, Y - 1))} west: {IsConnected(new Coordinate(X + 1, Y))} south: {IsConnected(new Coordinate(X, Y + 1))} east: {IsConnected(new Coordinate(X - 1, Y))}";
+        }
+    }
+
+
+    private record FillCoordinate(int X1, int X2, int Y, int DY)
+    {
+        public int X1 { get; set; } = X1;
     }
 }

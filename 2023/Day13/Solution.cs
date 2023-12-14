@@ -1,36 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using adventofcode.AdventLib;
 
 namespace AdventOfCode.Y2023.Day13;
-
-public static class EnumerableExtensions
-{
-    public static IEnumerable<IEnumerable<T>> SplitWhen<T>(this IEnumerable<T> source, Func<T, bool> predicate)
-    {
-        var sublist = new List<T>();
-        foreach (var item in source)
-        {
-            if (predicate(item))
-            {
-                if (sublist.Any())
-                {
-                    yield return sublist;
-                    sublist = new List<T>();
-                }
-            }
-            else
-            {
-                sublist.Add(item);
-            }
-        }
-
-        if (sublist.Any())
-        {
-            yield return sublist;
-        }
-    }
-}
 
 [ProblemName("Point of Incidence")]
 class Solution : Solver
@@ -70,7 +43,7 @@ class Solution : Solver
             newFieldData[y][x] = newFieldData[y][x] == '0' ? '1' : '0';
             return new Field(newFieldData);
         }
-
+        
         public bool IsPalindrome(List<ulong> list, int index)
         {
             int minLength = Math.Min(index + 1, list.Count - index - 1);
@@ -89,7 +62,7 @@ class Solution : Solver
         public IEnumerable<Field> FindAlternativeReflections() =>
             Enumerable.Range(0, Width).
                        SelectMany(x => Enumerable.Range(0, Height), (x, y) => GetAlternative(x, y)).
-                       Where(newField => HasDifferentPalindromes(newField));
+                       Where(HasDifferentPalindromes);
 
         private bool HasDifferentPalindromes(Field newField)
         {

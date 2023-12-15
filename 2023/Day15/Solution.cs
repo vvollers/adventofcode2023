@@ -22,16 +22,11 @@ class Solution : Solver
             );
     }
 
-    public object PartOne(string input) =>
-        input.Split(",").
-              Select(Hash).
-              Sum();
+    public object PartOne(string input) => input.Split(",").Select(Hash).Sum();
 
     public object PartTwo(string input)
     {
-        var operations = input.Split(",").
-                               Select(ParseLensOperation).
-                               ToList();
+        var operations = input.Split(",").Select(ParseLensOperation).ToList();
 
         Dictionary<int, List<LensOperation>> boxes = new();
 
@@ -39,15 +34,9 @@ class Solution : Solver
         {
             var boxNum = Hash(operation.Id);
             if (!boxes.ContainsKey(boxNum)) boxes[boxNum] = [];
-            switch (operation.op)
-            {
-                case '-': 
-                    boxes[boxNum].RemoveAll(o => o.Id == operation.Id); 
-                    break;
-                case '=':
-                    boxes[boxNum].ReplaceOrAdd(o => o.Id == operation.Id, operation);
-                    break;
-            }
+            
+            operation.op.ActionOn(('-',() => boxes[boxNum].RemoveAll(o => o.Id == operation.Id)),
+                                  ('=',() => boxes[boxNum].ReplaceOrAdd(o => o.Id == operation.Id, operation)));
         }
 
         return boxes.Select(kv => kv.Value.Select((val, idx) => (1 + kv.Key) * (1 + idx) * val.FocusStrength).Sum()).Sum();

@@ -6,6 +6,26 @@ namespace adventofcode.AdventLib
 {
     public static class Parsing
     {
+        public static void ActionOn(this char c, char mustbe, Action action)
+        {
+            if (c == mustbe)
+            {
+                action.Invoke();
+            }
+        }
+
+        public static void ActionOn(this char c, params (char mustbe, Action action)[] prms)
+        {
+            foreach (var (mustbe, action) in prms)
+            {
+                if (c == mustbe)
+                {
+                    action.Invoke();
+                }
+            }
+        }
+        
+        
         /// <summary>
         /// Performs an action on each character in the input string that matches a specified condition.
         /// </summary>

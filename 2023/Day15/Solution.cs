@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -27,16 +28,19 @@ class Solution : Solver
     public object PartTwo(string input)
     {
         var operations = input.Split(",").Select(ParseLensOperation).ToList();
-
+        
         Dictionary<int, List<LensOperation>> boxes = new();
 
         foreach (var operation in operations)
         {
             var boxNum = Hash(operation.Id);
-            if (!boxes.ContainsKey(boxNum)) boxes[boxNum] = [];
             
-            operation.op.ActionOn(('-',() => boxes[boxNum].RemoveAll(o => o.Id == operation.Id)),
-                                  ('=',() => boxes[boxNum].ReplaceOrAdd(o => o.Id == operation.Id, operation)));
+            if (!boxes.ContainsKey(boxNum)) boxes[boxNum] = [];
+
+            if (operation.op == '-')
+                boxes[boxNum].RemoveAll(o => o.Id == operation.Id);
+            else
+                boxes[boxNum].ReplaceOrAdd(o => o.Id == operation.Id, operation);
         }
 
         return boxes.Select(kv => kv.Value.Select((val, idx) => (1 + kv.Key) * (1 + idx) * val.FocusStrength).Sum()).Sum();

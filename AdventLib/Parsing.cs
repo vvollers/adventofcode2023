@@ -6,19 +6,38 @@ namespace adventofcode.AdventLib
 {
     public static class Parsing
     {
-        public static void ActionOn(this char c, char mustbe, Action action)
+        public static void ActionOn<IEquatable>(this IEquatable c, IEquatable mustbe, Action action)
         {
-            if (c == mustbe)
+            if (c.Equals(mustbe))
+            {
+                action.Invoke();
+            }
+        }
+        
+        public static void ActionOn<IEquatable>(this IEquatable c, Func<IEquatable, bool> predicate, Action action)
+        {
+            if (predicate(c))
             {
                 action.Invoke();
             }
         }
 
-        public static void ActionOn(this char c, params (char mustbe, Action action)[] prms)
+        public static void ActionOn<IEquatable>(this IEquatable c, params (IEquatable mustbe, Action action)[] prms)
         {
             foreach (var (mustbe, action) in prms)
             {
-                if (c == mustbe)
+                if (c.Equals(mustbe))
+                {
+                    action.Invoke();
+                }
+            }
+        }
+        
+        public static void ActionOn<IEquatable>(this IEquatable c, params (Func<IEquatable, bool> predicate, Action action)[] prms)
+        {
+            foreach (var (predicate, action) in prms)
+            {
+                if (predicate(c))
                 {
                     action.Invoke();
                 }

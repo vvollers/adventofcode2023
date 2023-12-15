@@ -80,6 +80,26 @@ namespace adventofcode.AdventLib
         }
 
         /// <summary>
+        /// Replaces an element in the list that satisfies the predicate with a new value, or adds the new value to the list if no element satisfies the predicate.
+        /// </summary>
+        /// <typeparam name="T">The type of elements in the list.</typeparam>
+        /// <param name="source">The list to be processed.</param>
+        /// <param name="predicate">A function that defines the condition to be met.</param>
+        /// <param name="with">The new value to replace the existing value or to be added to the list.</param>
+        /// <returns>The index of the replaced or added value.</returns>
+        public static int ReplaceOrAdd<T>(this List<T> source, Func<T, bool> predicate, T with)
+        {
+            if (TryGetIndex(source, predicate, out var index))
+            {
+                source[index] = with;
+                return index;
+            }
+
+            source.Add(with);
+            return source.Count - 1;
+        }
+
+        /// <summary>
         /// Splits the source into sublists when the predicate is met.
         /// </summary>
         /// <typeparam name="T">The type of elements in the source.</typeparam>

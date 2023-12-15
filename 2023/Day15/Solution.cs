@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using adventofcode.AdventLib;
 
 namespace AdventOfCode.Y2023.Day15;
 
@@ -44,16 +45,7 @@ class Solution : Solver
                     boxes[boxNum].RemoveAll(o => o.Id == operation.Id); 
                     break;
                 case '=':
-                    int index = boxes[boxNum].FindIndex(o => o.Id == operation.Id);
-                    if (index == -1)
-                    {
-                        boxes[boxNum].Add(operation);
-                    }
-                    else
-                    {
-                        boxes[boxNum][index] = operation;
-                    }
-
+                    boxes[boxNum].ReplaceOrAdd(o => o.Id == operation.Id, operation);
                     break;
             }
         }

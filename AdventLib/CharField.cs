@@ -12,6 +12,8 @@ public class CharField :IEquatable<CharField>
         UpdateHash();
     }
 
+    public CharField GetPart(int x, int y, int width, int height) => new(FieldData.Skip(y).Take(height).Select(row => row.Skip(x).Take(width).ToArray()).ToArray());
+
     protected void UpdateHash()
     {
         unchecked
@@ -91,6 +93,41 @@ public class CharField :IEquatable<CharField>
         }
 
         return result;
+    }
+    
+    public char this[int x, int y]
+    {
+        get
+        {
+            if (y >= 0 && y < FieldData.Length && x >= 0 && x < FieldData[y].Length)
+            {
+                return FieldData[y][x];
+            }
+            else
+            {
+                throw new IndexOutOfRangeException("Index out of range.");
+            }
+        }
+        set
+        {
+            if (y >= 0 && y < FieldData.Length && x >= 0 && x < FieldData[y].Length)
+            {
+                FieldData[y][x] = value;
+            }
+            else
+            {
+                throw new IndexOutOfRangeException("Index out of range.");
+            }
+        }
+    }
+    
+    public bool IsInside(int x, int y)
+    {
+        return x >= 0 && x < Width && y >= 0 && y < Height;
+    }
+    public bool IsOutside(int x, int y)
+    {
+        return x < 0 || x >= Width || y < 0 || y >= Height;
     }
     
     public char[][] FieldData { get; private set; }

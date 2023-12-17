@@ -150,7 +150,7 @@ class Solution : Solver
             
             if (cache.TryGetValue((beam.X, beam.Y, (int)lastBeamList.Direction), out var cacheVal))
             {
-                resultMap |= cacheVal;
+                resultMap.ApplyOr(cacheVal);
                 continue;
             }
             

@@ -71,6 +71,22 @@ public struct BinaryMap128
         return result;
     }
 
+    public unsafe void ApplyOr(BinaryMap128 other)
+    {
+        if (!Avx2.IsSupported) throw new PlatformNotSupportedException("AVX2 is not supported on this processor.");
+
+        for (var i = 0; i < LongsInMap; i += 4)
+        {
+            fixed (ulong* currentAdr = &map[i])
+            {
+                var current = Avx.LoadVector256(currentAdr);
+                var otherCurrent = Avx.LoadVector256(&other.map[i]);
+                var resultOp = Avx2.Or(current, otherCurrent);
+                Avx.Store(currentAdr, resultOp);
+            } 
+        }
+    }
+    
     public unsafe BinaryMap128 Or(BinaryMap128 other)
     {
         if (!Avx2.IsSupported) throw new PlatformNotSupportedException("AVX2 is not supported on this processor.");
@@ -84,7 +100,7 @@ public struct BinaryMap128
                 var otherCurrent = Avx.LoadVector256(&other.map[i]);
                 var resultOp = Avx2.Or(current, otherCurrent);
                 Avx.Store(&result.map[i], resultOp);
-            }
+            } 
         }
         return result;
     }

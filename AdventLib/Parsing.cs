@@ -160,5 +160,9 @@ namespace adventofcode.AdventLib
         public static char[][] ParseToCharGrid(this string input) => input.Split("\n").
             Select(o => o.ToCharArray()).
             ToArray();
+        
+        public static byte[][] ParseToByteGrid(this string input) => input.Split("\n").
+                                                                           Select(o => o.ToCharArray().Select(j => byte.Parse("" + j)).ToArray()).
+                                                                           ToArray();
     }
 }

@@ -9,8 +9,8 @@ class SplashScreenImpl : SplashScreen {
 
         var color = Console.ForegroundColor;
         Write(0xcc00, false, "           ▄█▄ ▄▄█ ▄ ▄ ▄▄▄ ▄▄ ▄█▄  ▄▄▄ ▄█  ▄▄ ▄▄▄ ▄▄█ ▄▄▄\n           █▄█ █ █ █ █ █▄█ █ █ █   █ █ █▄ ");
-            Write(0xcc00, false, " █  █ █ █ █ █▄█\n           █ █ █▄█ ▀▄▀ █▄▄ █ █ █▄  █▄█ █   █▄ █▄█ █▄█ █▄▄  0x0000 | 2023\n           ");
-            Write(0xcc00, false, " \n                                ");
+            Write(0xcc00, false, " █  █ █ █ █ █▄█\n           █ █ █▄█ ▀▄▀ █▄▄ █ █ █▄  █▄█ █   █▄ █▄█ █▄█ █▄▄  /* 2023 */\n            \n ");
+            Write(0xcc00, false, "                               ");
             Write(0xa25151, false, "...'''''''''...                    \n                             .'' ");
             Write(0xdf2308, true, "~");
             Write(0xa5a8af, false, "/\\");
@@ -52,17 +52,20 @@ class SplashScreenImpl : SplashScreen {
             Write(0xa25151, false, ".'          ");
             Write(0xcccccc, false, "13 ");
             Write(0xffff66, false, "**\n               ");
-            Write(0xd4dde4, false, "'.ZZ");
-            Write(0x666666, false, "      *   ");
-            Write(0xdf2308, true, "~~");
+            Write(0xd4dde4, false, "'.ZZ    ");
+            Write(0xdf2308, true, "~ ");
+            Write(0xffff66, true, "* ");
+            Write(0xdf2308, true, "~~~~");
             Write(0xa25151, false, ".   ");
             Write(0xa5a8af, false, "/\\  /\\   /\\ ");
             Write(0xa25151, false, "..'            ");
             Write(0xcccccc, false, "17 ");
-            Write(0x666666, false, "**\n           ");
+            Write(0xffff66, false, "**\n           ");
             Write(0xd4dde4, false, ".'''' ZZ");
             Write(0xffff66, true, "* ");
-            Write(0xd4dde4, false, ".'''.     '");
+            Write(0xd4dde4, false, ".'''.[]");
+            Write(0xdf2308, true, "~~~");
+            Write(0xd4dde4, false, "'");
             Write(0xa25151, false, "'''.........'''               ");
             Write(0xcccccc, false, "12 ");
             Write(0xffff66, false, "**\n           ");

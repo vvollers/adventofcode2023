@@ -1,8 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-
 using adventofcode.AdventLib;
+using System.Numerics;
+using System.Runtime.Intrinsics.X86;
+using System.Text;
+using AdventOfCode.Y2022.Day08;
+using Microsoft.CodeAnalysis.Text;
 
 namespace AdventOfCode.Y2023.Day16;
 
@@ -35,30 +39,45 @@ public enum Directions
     Right,
 }
 
-public class Beam
+public record Beam
 {
-    private static readonly Dictionary<Directions, Action<Beam>> MoveActions = new()
+    public static readonly Dictionary<Directions, Directions> OppositeDirections = new()
+                                                                                   {
+                                                                                       { Directions.Up, Directions.Down },
+                                                                                       { Directions.Down, Directions.Up },
+                                                                                       { Directions.Left, Directions.Right },
+                                                                                       { Directions.Right, Directions.Left },
+                                                                                   };
+    
+    private static readonly Dictionary<Directions, Func<Beam, Beam>> MoveActions = new()
                                                                                {
-                                                                                   { Directions.Up, beam => beam.Y-- },
-                                                                                   { Directions.Down, beam => beam.Y++ },
-                                                                                   { Directions.Left, beam => beam.X-- },
-                                                                                   { Directions.Right, beam => beam.X++ },
+                                                                                   { Directions.Up, beam => new Beam(beam, beam.X, beam.Y-1) },
+                                                                                   { Directions.Down, beam => new Beam(beam, beam.X, beam.Y+1) },
+                                                                                   { Directions.Left, beam => new Beam(beam, beam.X-1, beam.Y) },
+                                                                                   { Directions.Right, beam => new Beam(beam, beam.X+1, beam.Y) },
+                                                                               };
+    private static readonly Dictionary<Directions, Func<Beam, Beam>> ReverseMoveActions = new()
+                                                                               {
+                                                                                   { Directions.Up, beam => new Beam(beam, beam.X, beam.Y+1) },
+                                                                                   { Directions.Down, beam => new Beam(beam, beam.X, beam.Y-1) },
+                                                                                   { Directions.Left, beam => new Beam(beam, beam.X+1, beam.Y) },
+                                                                                   { Directions.Right, beam => new Beam(beam, beam.X-1, beam.Y) },
                                                                                };
 
-    private static readonly Dictionary<Directions, Directions> TurnLeftActions = new()
+    private static readonly Dictionary<Directions, Func<Beam, Beam>> TurnLeftActions = new()
                                                                                  {
-                                                                                     { Directions.Up, Directions.Left },
-                                                                                     { Directions.Down, Directions.Right },
-                                                                                     { Directions.Left, Directions.Down },
-                                                                                     { Directions.Right, Directions.Up },
+                                                                                     { Directions.Up, beam => new Beam(beam, Directions.Left) },
+                                                                                     { Directions.Down, beam => new Beam(beam, Directions.Right) },
+                                                                                     { Directions.Left, beam => new Beam(beam, Directions.Down) },
+                                                                                     { Directions.Right, beam => new Beam(beam, Directions.Up) },
                                                                                  };
 
-    private static readonly Dictionary<Directions, Directions> TurnRightActions = new()
+    private static readonly Dictionary<Directions, Func<Beam, Beam>> TurnRightActions = new()
                                                                                   {
-                                                                                      { Directions.Up, Directions.Right },
-                                                                                      { Directions.Down, Directions.Left },
-                                                                                      { Directions.Left, Directions.Up },
-                                                                                      { Directions.Right, Directions.Down },
+                                                                                      { Directions.Up, beam => new Beam(beam, Directions.Right) },
+                                                                                      { Directions.Down, beam => new Beam(beam, Directions.Left) },
+                                                                                      { Directions.Left, beam => new Beam(beam, Directions.Up) },
+                                                                                      { Directions.Right, beam => new Beam(beam, Directions.Down) },
                                                                                   };
 
     public Beam(int x, int y, Directions direction)
@@ -74,17 +93,25 @@ public class Beam
         X = otherBeam.X;
         Y = otherBeam.Y;
     }
+    
+    public Beam(Beam otherBeam, int x, int y)
+    {
+        Direction = otherBeam.Direction;
+        X = x;
+        Y = y;
+    }
 
-    public Directions Direction { get; set; }
+    public Directions Direction { get; private init; }
 
-    public int X { get; set; }
-    public int Y { get; set; }
+    public int X { get; private init;}
+    public int Y { get; private init;}
 
-    public void Move() => MoveActions[Direction].Invoke(this);
+    public Beam Move() => MoveActions[Direction].Invoke(this);
+    public Beam MoveBack() => ReverseMoveActions[Direction].Invoke(this);
 
-    public void TurnLeft() => Direction = TurnLeftActions[Direction];
+    public Beam TurnLeft() => TurnLeftActions[Direction].Invoke(this);
 
-    public void TurnRight() => Direction = TurnRightActions[Direction];
+    public Beam TurnRight() => TurnRightActions[Direction].Invoke(this);
 
     public (Beam, Beam) Split()
     {
@@ -92,10 +119,10 @@ public class Beam
         {
             case Directions.Up:
             case Directions.Down:
-                return (new Beam(this, Direction = Directions.Left), new Beam(this, Direction = Directions.Right));
+                return (new Beam(this, Directions.Left), new Beam(this, Directions.Right));
             case Directions.Left:
             case Directions.Right:
-                return (new Beam(this, Direction = Directions.Up), new Beam(this, Direction = Directions.Down));
+                return (new Beam(this, Directions.Up), new Beam(this, Directions.Down));
         }
 
         return (this, this);
@@ -105,85 +132,129 @@ public class Beam
 [ProblemName("The Floor Will Be Lava")]
 class Solution : Solver
 {
-    public int Solve(MirrorField input, Beam initialBeam)
+    public BinaryMap128 Solve(MirrorField input, Beam initialBeam, Dictionary<(int, int, int), BinaryMap128> cache, bool useCache = true)
     {
         var field = new MirrorField(input);
 
-        Queue<Beam> beams = new([initialBeam]);
+        Queue<(Beam[], Beam)> beams = new Queue<(Beam[], Beam)>();
+        beams.Enqueue(([initialBeam], initialBeam));
+        
+        BinaryMap128 resultMap = new BinaryMap128();
+        
+        while(beams.Count > 0) {
+            var beamCombo = beams.Dequeue();
 
-        var fieldCharActions = new Dictionary<char, Action<Beam>>
-                               {
-                                   ['\\'] = beam => 
-                                            {
-                                                if (beam.Direction is Directions.Up or Directions.Down)
-                                                    beam.TurnLeft();
-                                                else
-                                                    beam.TurnRight();
-                                                beams.Enqueue(beam);
-                                            },
-                                   ['/'] = beam => 
-                                           {
-                                               if (beam.Direction is Directions.Up or Directions.Down)
-                                                   beam.TurnRight();
-                                               else
-                                                   beam.TurnLeft();
-                                               beams.Enqueue(beam);
-                                           },
-                                   ['-'] = beam => 
-                                           {
-                                               if (beam.Direction is Directions.Up or Directions.Down)
-                                               {
-                                                   var otherBeams = beam.Split();
-                                                   beams.Enqueue(otherBeams.Item1);
-                                                   beams.Enqueue(otherBeams.Item2);
-                                               }
-                                               else
-                                                   beams.Enqueue(beam);
-                                           },
-                                   ['|'] = beam => 
-                                           {
-                                               if (beam.Direction is Directions.Left or Directions.Right)
-                                               {
-                                                   var otherBeams = beam.Split();
-                                                   beams.Enqueue(otherBeams.Item1);
-                                                   beams.Enqueue(otherBeams.Item2);
-                                               }
-                                               else
-                                                   beams.Enqueue(beam);
-                                           },
-                                   ['.'] = beam => beams.Enqueue(beam)
-                               };
-
-        while (beams.Count > 0)
-        {
-            var beam = beams.Dequeue();
-            beam.Move();
-
-            if (field.IsOutside(beam.X, beam.Y) || field.HasVisited(beam.X, beam.Y, beam.Direction))
+            var beamList = beamCombo.Item1;
+            var beam = beamCombo.Item2;
+            var lastBeamList = beamList[^1];
+            
+            if (cache.TryGetValue((beam.X, beam.Y, (int)lastBeamList.Direction), out var cacheVal))
             {
+                resultMap |= cacheVal;
                 continue;
             }
+            
+            beam = beam.Move();
+            var isOutside = field.IsOutside(beam.X, beam.Y);
 
+            if (isOutside || field.HasVisited(beam.X, beam.Y, beam.Direction))
+            {
+                if(useCache && isOutside)
+                {
+                    for (var idx = beamList.Length - 1; idx >= 0; idx--)
+                    {
+                        var beamPart = beamList[idx];
+                        if (field.IsInside(beamPart.X, beamPart.Y) && field[beamPart.X, beamPart.Y] != '.')
+                        {
+                            var backMove = beamPart.MoveBack();
+                            
+                            cache[(beamPart.X, beamPart.Y, (int)backMove.Direction)] = Solve(new MirrorField(field), new Beam(backMove.X, backMove.Y, backMove.Direction), cache, false);
+                        }
+                    }
+                 }
+                continue;
+            }
+            
             field.MarkVisited(beam.X, beam.Y, beam.Direction);
 
-            var fieldChar = field[beam.X, beam.Y];
+            resultMap[beam.X, beam.Y] = true;
 
-            if (fieldCharActions.ContainsKey(fieldChar))
+            var fieldChar = field[beam.X, beam.Y];
+            Beam newBeam;
+            switch (fieldChar)
             {
-                fieldCharActions[fieldChar](beam);
+                case '\\':
+                    newBeam = beam.Direction is Directions.Up or Directions.Down ? beam.TurnLeft() : beam.TurnRight();
+                    beams.Enqueue(([..beamList, beam], newBeam));
+                    continue;
+                case '/':
+                    newBeam = beam.Direction is Directions.Up or Directions.Down ? beam.TurnRight() : beam.TurnLeft();
+                    beams.Enqueue(([..beamList, beam], newBeam));
+                    continue;
+                case '-':
+                    if (beam.Direction is Directions.Up or Directions.Down)
+                    {
+                        var otherBeams = beam.Split();
+                        beams.Enqueue(([..beamList, beam], otherBeams.Item1));
+                        beams.Enqueue(([..beamList, beam], otherBeams.Item2));
+                    }
+                    else
+                    {
+                        beams.Enqueue(([..beamList, beam], beam));
+                    }
+
+                    continue;
+                case '|':
+                    if (beam.Direction is Directions.Left or Directions.Right)
+                    {
+                        var otherBeams = beam.Split();
+                        beams.Enqueue(([..beamList, beam], otherBeams.Item1));
+                        beams.Enqueue(([..beamList, beam], otherBeams.Item2));
+                    }
+                    else
+                    {
+                        beams.Enqueue(([..beamList, beam], beam));
+                    }
+                    continue;
+                default:
+                    Beam backBeam;
+                    while (true)
+                    {
+                        backBeam = beam;
+                        beam = beam.Move();
+                        
+                        if (field.IsOutside(beam.X, beam.Y) || field.HasVisited(beam.X, beam.Y, beam.Direction))
+                        {
+                            break;
+                        }
+
+                        resultMap[beam.X, beam.Y] = true;
+                        
+                        if (field[beam.X, beam.Y] != '.')
+                        {
+                            break;
+                        }
+                    }
+
+                    beams.Enqueue(([..beamList, backBeam], backBeam));
+                    continue;
             }
         }
-
-        return field.NumVisited;
+        return resultMap;
     }
 
-    public object PartOne(string input) => Solve(new MirrorField(input.ParseToCharGrid()), new Beam(-1, 0, Directions.Right));
-
+    public object PartOne(string input)
+    {
+        return Solve(new MirrorField(input.ParseToCharGrid()), new Beam(-1, 0, Directions.Right), new(), false).CountSetBits();
+    }
+    
     public object PartTwo(string input)
     {
         var field = new MirrorField(input.ParseToCharGrid());
+        
+        Dictionary<(int, int, int), BinaryMap128> cache = new();
 
-        HashSet<Beam> beams = new();
+        HashSet<Beam> beams = new(); 
         for (var x = 0; x < field.Width; x++)
         {
             beams.Add(new Beam(x, -1, Directions.Down));
@@ -196,7 +267,7 @@ class Solution : Solver
             beams.Add(new Beam(field.Width, y, Directions.Left));
         }
 
-        return beams.Select(beam => Solve(field, beam)).
+        return beams.Select(beam => Solve(field, beam, cache).CountSetBits()).
                      Max();
     }
 }

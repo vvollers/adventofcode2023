@@ -26,7 +26,7 @@ class Solution : Solver {
     public bool ReachedGoal(State state, int width, int height, int minSteps) => state.X == width - 1 && state.Y == height - 1 && state.Steps >= minSteps - 1;
     public bool IsOutside(int x, int y, int width, int height) => x < 0 || x == width || y < 0 || y == height;
     
-    protected int Solve(byte[][] grid, int minSteps, int maxSteps)
+    public int Solve(byte[][] grid, int minSteps, int maxSteps)
     {
         var queue = new PriorityQueue<State, int>();
         var visited = new HashSet<int>();
@@ -51,13 +51,12 @@ class Solution : Solver {
                 if (direction == current.Direction)
                 {
                     newSteps = current.Steps + 1;
+                    if (newSteps == maxSteps)
+                    {
+                        continue;
+                    }
                 }
 
-                if (newSteps == maxSteps)
-                {
-                    continue;
-                }
-                
                 var x = current.X + direction switch
                 {
                     Directions.Right => 1,

@@ -151,6 +151,11 @@ namespace adventofcode.AdventLib
                                        Select(r => builder(r.c, r.x, y))).
                   SelectMany(x => x).
                   ToList();
+        
+        public static List<T> ParseLineData<T>(this string input, Func<string, T> builder) =>
+            input.Split("\n").
+                  Select(builder).
+                  ToList();
 
         /// <summary>
         /// Parses the input string into a 2D array of characters.

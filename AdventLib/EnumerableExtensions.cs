@@ -130,6 +130,40 @@ namespace adventofcode.AdventLib
                 yield return sublist;
             }
         }
+        
+        public static List<IEnumerable<T>> SplitOn<T>(this IEnumerable<T> source, Func<T, bool> predicate)
+        {
+            var sublist = new List<T>();
+            var result = new List<IEnumerable<T>>();
+            foreach (var item in source)
+            {
+                if (predicate(item))
+                {
+                    if (sublist.Any())
+                    {
+                        result.Add(sublist);
+                        sublist = new List<T>();
+                    }
+                }
+                else
+                {
+                    sublist.Add(item);
+                }
+            }
+
+            if (sublist.Any())
+            {
+                result.Add(sublist);
+            }
+
+            return result;
+        }
+
+        public static T2 SelectList<T,T2>(this List<T> source, Func<List<T>, T2> selector)
+        {
+            return selector(source);
+        }
+
 
         /// <summary>
         /// Repeats the source for a specified count and returns a string.

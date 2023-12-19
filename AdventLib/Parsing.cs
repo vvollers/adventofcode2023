@@ -157,6 +157,13 @@ namespace adventofcode.AdventLib
                   Select(builder).
                   ToList();
 
+        public static (List<T1>, List<T2>) ParseLineData<T1,T2>(this string input, Func<string, T1> builder, Func<string, T2> builder2) =>
+            ((List<T1>, List<T2>))input.Split("\n").
+                                        SplitOn(line => line.Length == 0).
+                                        SelectList(parts => (parts[0].Select(builder).ToList(), 
+                                                             parts[1].Select(builder2).ToList()
+                                                            ));
+
         /// <summary>
         /// Parses the input string into a 2D array of characters.
         /// </summary>

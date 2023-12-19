@@ -40,6 +40,7 @@ class Solution : Solver {
                             '1' => Directions.Down,
                             '2' => Directions.Left,
                             '3' => Directions.Up,
+                            _   => Directions.Up,
                         };
             distance = int.Parse(color.Substring(1, 5), NumberStyles.HexNumber);
         }

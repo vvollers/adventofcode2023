@@ -5,61 +5,57 @@ using adventofcode.AdventLib;
 
 namespace AdventOfCode.Y2023.Day19;
 
+public enum Operator
+{
+    GreaterThan = '>',
+    LessThan = '<',
+    None,
+}
+public record Part(Dictionary<string, int> Properties)
+{
+    public override string ToString()
+    {
+        return $"Part ({string.Join(", ", Properties.Select(kv => $"{kv.Key}={kv.Value}"))})";
+    }
+
+    public int Score =>
+        Properties.Select(kv => kv.Value).
+                   Sum();
+};
+public record RulePart(string Name, Operator Operator, int Value, string NextRule);
+public record Rule(string Name, List<RulePart> RuleParts, string DefaultRule) {
+    public override string ToString()
+    {
+        return $"Rule '{Name}' ({string.Join(", ", RuleParts)}) [Default: {DefaultRule}";
+    }
+};
+
 [ProblemName("Aplenty")]
 class Solution : Solver
 {
-    public enum Operator
-    {
-        GreaterThan = '>',
-        LessThan = '<',
-        None
-    }
-    
-    public Operator GetFirstMatchingOperator(string input)
+    private Operator GetFirstMatchingOperator(string input)
     {
         if (string.IsNullOrEmpty(input))
         {
             return Operator.None;
         }
 
-        foreach (char c in input.ToUpper())
+        foreach (var c in input.ToUpper().Where(c => Enum.IsDefined(typeof(Operator), (int)c)))
         {
-            if (Enum.IsDefined(typeof(Operator), (int)c))
-            {
-                return (Operator)c;
-            }
+            return (Operator)c;
         }
 
         return Operator.None;
     }
 
-    public record Part(Dictionary<string, int> Properties)
-    {
-        public override string ToString()
-        {
-            return $"Part ({String.Join(", ", Properties.Select(kv => $"{kv.Key}={kv.Value}"))})";
-        }
-
-        public int Score =>
-            Properties.Select(kv => kv.Value).
-                       Sum();
-    };
-    public record RulePart(string Name, Operator Operator, int Value, string NextRule);
-    public record Rule(string Name, List<RulePart> RuleParts, string DefaultRule) {
-        public override string ToString()
-        {
-            return $"Rule '{Name}' ({String.Join(", ", RuleParts)}) [Default: {DefaultRule}";
-        }
-    };
-
-    public Part ParsePartLine(string line)
+    private Part ParsePartLine(string line)
     {
         return new Part(line[1..^1].Split(',').
                            Select(x => x.Split('=')).
                            ToDictionary( k=> k[0], v => int.Parse(v[1])));
     }
 
-    public RulePart ParseRulePart(string rule)
+    private RulePart ParseRulePart(string rule)
     {
         var op = GetFirstMatchingOperator(rule);
         if (op == Operator.None)
@@ -71,13 +67,13 @@ class Solution : Solver
         var rp = kv[0].Split((char)op);
         return new RulePart(rp[0], op, int.Parse(rp[1]), kv[1]);
     }
-    
-    public Rule ParseRuleLine(string line)
+
+    private Rule ParseRuleLine(string line)
     {
         var kv = line[..^1].Split('{');
         var name = kv[0];
         var defaultRule = "";
-        List<RulePart> ruleParts = new();
+        List<RulePart> ruleParts = [];
         foreach (var part in kv[1].
                              Split(',').
                              Select(ParseRulePart))
@@ -95,7 +91,9 @@ class Solution : Solver
         return new Rule(name, ruleParts, defaultRule);
     }
 
-    public bool IsAccepted(string currentRule, Dictionary<string, int> partProps, Dictionary<string, Rule> rules)
+    private bool IsAccepted(string currentRule,
+                            IReadOnlyDictionary<string, int> partProps,
+                            IReadOnlyDictionary<string, Rule> rules)
     {
         var rule = rules[currentRule];
         var hasRuleMatch = rule.RuleParts.TryGetIndex(
@@ -103,16 +101,16 @@ class Solution : Solver
                     (rp.Operator == Operator.GreaterThan && partProps[rp.Name] > rp.Value) || 
                     (rp.Operator == Operator.LessThan && partProps[rp.Name] < rp.Value), 
                 out var index);
-        string nextRule = !hasRuleMatch ? rule.DefaultRule : rule.RuleParts[index].NextRule;
-        switch (nextRule)
-        {
-            case "A": return true;
-            case "R": return false;
-            default: return IsAccepted(nextRule, partProps, rules);
-        }
+        var nextRule = !hasRuleMatch ? rule.DefaultRule : rule.RuleParts[index].NextRule;
+        return nextRule switch
+               {
+                   "A" => true,
+                   "R" => false,
+                   _   => IsAccepted(nextRule, partProps, rules),
+               };
     }
-    
-    public List<Dictionary<string, Range>> GetAccepted(string currentRule, Dictionary<string, Range> partRanges, Dictionary<string, Rule> rules)
+
+    private IEnumerable<Dictionary<string, Range>> GetAccepted(string currentRule, Dictionary<string, Range> partRanges, Dictionary<string, Rule> rules)
     {
         var rule = rules[currentRule];
 
@@ -156,7 +154,7 @@ class Solution : Solver
     
     public object PartOne(string input)
     {
-        var (rules, parts) = input.ParseLineData(ParseRuleLine, ParsePartLine);
+        (var rules, var parts) = input.ParseLineData(ParseRuleLine, ParsePartLine);
 
         var ruleDict = rules.ToDictionary(k => k.Name, k => k);
 
@@ -165,12 +163,12 @@ class Solution : Solver
     }
 
     public object PartTwo(string input) {
-        var (rules, _) = input.ParseLineData(ParseRuleLine, ParsePartLine);
+        (var rules, _) = input.ParseLineData(ParseRuleLine, ParsePartLine);
 
         var ruleDict = rules.ToDictionary(k => k.Name, k => k);
 
         string[] partTypes = ["x", "m", "a", "s"];
-        Dictionary<string, Range> ranges = partTypes.ToDictionary(o => o, _ => new Range(1,4000));
+        var ranges = partTypes.ToDictionary(o => o, _ => new Range(1,4000));
         
         return GetAccepted("in", ranges, ruleDict).Sum(combination => partTypes.Select(p => combination[p].Length).Aggregate((a, b) => a * b));
     }

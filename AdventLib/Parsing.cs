@@ -176,5 +176,31 @@ namespace adventofcode.AdventLib
         public static byte[][] ParseToByteGrid(this string input) => input.Split("\n").
                                                                            Select(o => o.ToCharArray().Select(j => byte.Parse("" + j)).ToArray()).
                                                                            ToArray();
+        
+        public static TEnum FromChar<TEnum>(char charValue, TEnum defaultValue) where TEnum : struct, IConvertible
+        {
+            if (Enum.IsDefined(typeof(TEnum), (int)charValue))
+            {
+                return (TEnum) Enum.ToObject(typeof(TEnum), (int)charValue);
+            }
+
+            return defaultValue;
+        }
+        
+        public static void DebugPrint<T>(this List<T> list)
+        {
+            for(var i=0;i<list.Count;i++)
+            {
+                Console.WriteLine($"#{i}: {list[i]}");
+            }
+        }
+        public static void DebugPrint<T>(this List<T> list, Func<T, string> toString)
+        {
+            for(var i=0;i<list.Count;i++)
+            {
+                Console.WriteLine($"#{i}: {toString(list[i])}");
+            }
+        }
+
     }
 }

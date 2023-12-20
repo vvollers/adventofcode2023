@@ -292,12 +292,11 @@ class Solution : Solver
                                       Select(kv => kv.Value).
                                       OrderByDescending(node => node.Outputs.Count).
                                       First();
-            var broadcasterNode = partialStateMachines[name]["broadcaster"];
 
             String bitMap = "";
             foreach (var kv in orderedList)
             {
-                bool bitIsSet = !(kv.Value.Inputs.Contains(nodeWithMostOutputs) && !kv.Value.Inputs.Contains(broadcasterNode));
+                bool bitIsSet = kv.Value.Outputs.Contains(nodeWithMostOutputs);
                 bitMap = (bitIsSet ? "1" : "0") + bitMap;
             }
 

@@ -141,8 +141,8 @@ class Solution : Solver
          * a quadratic equation that can be used to predict future values in the sequence.
          */
 
-        var aPlusB = aPlusBPlusC - c;               // a + b + c
-        var fourAPlusTwoB = fourAPlusTwoBPlusC - c; // 4a +2b +c
+        var aPlusB = aPlusBPlusC - c;               
+        var fourAPlusTwoB = fourAPlusTwoBPlusC - c; 
         var twoA = fourAPlusTwoB - (2 * aPlusB);
         var a = twoA / 2;
         var b = aPlusB - a;

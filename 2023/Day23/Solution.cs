@@ -176,8 +176,11 @@ class Solution : Solver
             }
         }
 
-        junctions.Add(new Junction(1, 0, new Dictionary<Junction, int>()));
-        junctions.Add(new Junction(grid[0].Length - 2, grid.Length - 1, new Dictionary<Junction, int>()));
+        var entryJunction = new Junction(1, 0, new Dictionary<Junction, int>());
+        var exitJunction = new Junction(grid[0].Length - 2, grid.Length - 1, new Dictionary<Junction, int>());
+        
+        junctions.Add(entryJunction);
+        junctions.Add(exitJunction);
 
         foreach (var junction in junctions)
         {
@@ -206,6 +209,19 @@ class Solution : Solver
             foreach (var kv in neighbours)
             {
                 junction.Neighbours[kv.Key] = kv.Value;
+            }
+        }
+
+        if(!considerSlopes) {
+            foreach (var j in junctions)
+            {
+                var validNeighbours = j.Neighbours.Where(kv => kv.Key != entryJunction && kv.Key != exitJunction).
+                                        ToDictionary();
+                if (validNeighbours.Count > 3)
+                {
+                    var shortest = validNeighbours.OrderBy(kv => kv.Value).Select(o => o.Key).First();
+                    j.Neighbours.Remove(shortest);
+                }
             }
         }
 
